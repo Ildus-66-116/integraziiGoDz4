@@ -131,11 +131,59 @@ func getUserFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user.Friends)
 }
 
+// Задание 5
+
+type UpdateUserAgeRequest struct {
+	NewAge int `json:"new_age"`
+}
+
+func updateUserAgeHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Path[len("/usera/"):]
+
+	var request UpdateUserAgeRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, exists := users[userID]
+	if !exists {
+		http.Error(w, "User does not exist", http.StatusNotFound)
+		return
+	}
+
+	user.Age = request.NewAge
+	users[userID] = user
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "возраст пользователя успешно обновлён")
+}
+
+//вывод данных
+
+func getAllUsersHandler(w http.ResponseWriter, r *http.Request) {
+	var formattedUsers []string
+
+	for _, user := range users {
+		formattedUser := fmt.Sprintf("ID: %s | Name: %s | Age: %d | Friends: %v", user.ID, user.Name, user.Age, user.Friends)
+		formattedUsers = append(formattedUsers, formattedUser)
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	for _, user := range formattedUsers {
+		fmt.Fprintln(w, user)
+	}
+}
+
 func main() {
 	http.HandleFunc("/create", createUserHandler)
 	http.HandleFunc("/make_friends", makeFriendsHandler) // Задание 2
 	http.HandleFunc("/user", deleteUserHandler)          // Задание 3
 	http.HandleFunc("/friends/", getUserFriendsHandler)  // Задание 4
+	http.HandleFunc("/usera/", updateUserAgeHandler)     // Задание 5
+	http.HandleFunc("/users", getAllUsersHandler)        // Вывод данных
 
 	fmt.Println("Starting server on :8080...")
 	err := http.ListenAndServe(":8080", nil)
