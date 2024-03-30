@@ -47,6 +47,8 @@ type MakeFriendsRequest struct {
 	TargetID string `json:"target_id"`
 }
 
+// Задание 2
+
 func makeFriendsHandler(w http.ResponseWriter, r *http.Request) {
 	var request MakeFriendsRequest
 
@@ -72,12 +74,68 @@ func makeFriendsHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "%s и %s теперь друзья", sourceUser.Name, targetUser.Name)
+	fmt.Fprintf(w, "Статус %d %s и %s теперь друзья", http.StatusOK, sourceUser.Name, targetUser.Name)
+}
+
+// Задание 3
+type DeleteUserRequest struct {
+	TargetID string `json:"target_id"`
+}
+
+func deleteUserHandler(w http.ResponseWriter, r *http.Request) {
+	var request DeleteUserRequest
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, exists := users[request.TargetID]
+	if !exists {
+		http.Error(w, "User does not exist", http.StatusNotFound)
+		return
+	}
+
+	for range user.Friends {
+		for id, friend := range users {
+			for i, name := range friend.Friends {
+				if name == user.Name {
+					friend.Friends = append(friend.Friends[:i], friend.Friends[i+1:]...)
+					users[id] = friend
+					break
+				}
+			}
+		}
+	}
+
+	delete(users, request.TargetID)
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Статус %d Удалён пользователь: %s", http.StatusOK, user.Name)
+}
+
+// Задание 4
+
+func getUserFriendsHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Path[len("/friends/"):]
+
+	user, exists := users[userID]
+	if !exists {
+		http.Error(w, "User does not exist", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user.Friends)
 }
 
 func main() {
 	http.HandleFunc("/create", createUserHandler)
-	http.HandleFunc("/make_friends", makeFriendsHandler)
+	http.HandleFunc("/make_friends", makeFriendsHandler) // Задание 2
+	http.HandleFunc("/user", deleteUserHandler)          // Задание 3
+	http.HandleFunc("/friends/", getUserFriendsHandler)  // Задание 4
 
 	fmt.Println("Starting server on :8080...")
 	err := http.ListenAndServe(":8080", nil)
