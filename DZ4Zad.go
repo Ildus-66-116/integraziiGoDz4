@@ -9,6 +9,8 @@ import (
 	"sync"
 )
 
+// Задание 1
+
 type User struct {
 	ID      string   `json:"id"`
 	Name    string   `json:"name"`
@@ -178,7 +180,7 @@ func getAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	http.HandleFunc("/create", createUserHandler)
+	http.HandleFunc("/create", createUserHandler)        // Задание 1
 	http.HandleFunc("/make_friends", makeFriendsHandler) // Задание 2
 	http.HandleFunc("/user", deleteUserHandler)          // Задание 3
 	http.HandleFunc("/friends/", getUserFriendsHandler)  // Задание 4
